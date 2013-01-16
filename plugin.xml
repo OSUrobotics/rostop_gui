@@ -1,0 +1,20 @@
+<library path="src">
+  <class name="ROSTOP" type="rostop.rostop_plugin.RosTop" base_class_type="rqt_gui_py::Plugin">
+    <description>
+      Provides information similar to that provided in UNIX top for running ROS nodes.
+    </description>
+    <qtgui>
+      <!-- optional grouping...
+      <group>
+        <label>Group</label>
+      </group>
+      <group>
+        <label>Subgroup</label>
+      </group>
+      -->
+      <label>ROSTOP</label>
+      <icon type="theme">system-help</icon>
+      <statustip></statustip>
+    </qtgui>
+  </class>
+</library>
