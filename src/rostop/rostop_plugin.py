@@ -9,19 +9,19 @@ import rospy
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtGui import QTableWidget, QTableWidgetItem, QPushButton
+from python_qt_binding.QtGui import QLabel, QTableWidget, QTableWidgetItem, QPushButton, QVBoxLayout, QCheckBox, QWidget, QToolBar, QLineEdit
 from python_qt_binding.QtCore import Qt, QTimer
 
 from rostop.node_info import NodeInfo
 from functools import partial
-
+from pprint import pprint
 
 class RosTop(Plugin):
 
-    node_fields   = [        'pid', 'get_cpu_percent', 'get_memory_percent', 'get_num_threads']
-    out_fields    = [        'pid', 'cpu_percent',     'memory_percent',     'num_threads'    ]
-    format_fields = [         '%s', '%0.2f%%',         '%0.2f%%',            '%s'             ]
-    node_labels   = ['Node', 'PID', 'CPU %',           'Mem %',              'Num Threads'    ]
+    node_fields   = [             'pid', 'get_cpu_percent', 'get_memory_percent', 'get_num_threads']
+    out_fields    = ['node_name', 'pid', 'cpu_percent',     'memory_percent',     'num_threads'    ]
+    format_fields = [             '%s',  '%0.2f%%',         '%0.2f%%',            '%s'             ]
+    node_labels   = ['Node',      'PID', 'CPU %',           'Mem %',              'Num Threads'    ]
 
     _node_info = NodeInfo()
 
@@ -42,13 +42,37 @@ class RosTop(Plugin):
             print 'arguments: ', args
             print 'unknowns: ', unknowns
 
+        # Setup the toolbar
+        self._toolbar = QToolBar()
+        # context.add_toolbar(self._toolbar)
+        self._filter_box = QLineEdit()
+        self._regex_box  = QCheckBox()
+        self._regex_box.setText('regex')
+        self._toolbar.addWidget(QLabel('Filter'))
+        self._toolbar.addWidget(self._filter_box)
+        self._toolbar.addWidget(self._regex_box)
+
+
+        # self.button.clicked.connect(lambda : self.update_table())
+
+        self._container = QWidget()
+        self._layout    = QVBoxLayout()
+        self._container.setLayout(self._layout)
+
         # Create QWidget
         self._table_widget = QTableWidget()
         self._table_widget.setObjectName('TopTable')
-        context.add_widget(self._table_widget)
         self._table_widget.setColumnCount(len(self.node_labels))
         self._table_widget.setHorizontalHeaderLabels(self.node_labels)
         self._table_widget.setSortingEnabled(True)
+
+
+        self._layout.addWidget(self._table_widget)
+        # context.add_widget(self._layout)
+        context.add_widget(self._container)
+
+        # self._table_widget.horizontalHeader().sortIndicatorChanged.connect(self._sortIndicatorChanged)
+
         self.update_table()
         self.update_table()
         self._update_timer = QTimer()
@@ -56,22 +80,41 @@ class RosTop(Plugin):
         self._update_timer.timeout.connect(self.update_table)
         self._update_timer.start()
 
-    def update_one_item(self, nx, node_name, process):
-        self._table_widget.setItem(nx, 0, QTableWidgetItem(node_name))
-        info = process.as_dict(self.node_fields)
-        # info['cpu_percent'] = process.get_cpu_percent()
+    def _sortIndicatorChanged(self, logicalIndex, order):
+        print logicalIndex, order
+        print self._table_widget.horizontalHeader().sortIndicatorSection(),
+        print self._table_widget.horizontalHeader().sortIndicatorOrder()
+        print '===='
+
+    def _filter_node(self, node_name):
+        pass        
+
+    def update_one_item(self, nx, info):
+        # twi = QTableWidgetItem(info['node_name'])
+        # twi.setFlags(twi.flags() ^ Qt.ItemIsEditable)
+        # self._table_widget.setItem(nx, 0, twi)
         for fx, field in enumerate(self.out_fields):
+            self._table_widget.removeCellWidget(nx, fx)
             val = info[field]
             twi = QTableWidgetItem()
             twi.setData(Qt.EditRole, val)
-            self._table_widget.setItem(nx, fx+1, twi)
+            twi.setFlags(twi.flags() ^ Qt.ItemIsEditable)
+            self._table_widget.setItem(nx, fx, twi)
 
     def update_table(self):
-        self._table_widget.clearContents()
-        infos = self._node_info.get_all_node_info()
+        # self._table_widget.clearContents()
+        infos = self._node_info.get_all_node_fields(self.node_fields)
         self._table_widget.setRowCount(len(infos))
-        for nx, (node_name, process) in enumerate(infos):
-            self.update_one_item(nx, node_name, process)
+        # asc = 0, desc = 1
+        sort_section = self._table_widget.horizontalHeader().sortIndicatorSection()
+        sort_order = self._table_widget.horizontalHeader().sortIndicatorOrder()
+
+        if sort_section >= len(self.out_fields):
+            sort_section = 0
+
+        for nx, info in enumerate(sorted(infos, key=lambda x: x[self.out_fields[sort_section]], reverse=sort_order)):
+            self.update_one_item(nx, info)
+
             # QTimer.singleShot(0, updateme)        
 
     def shutdown_plugin(self):
