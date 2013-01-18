@@ -9,7 +9,7 @@ import rospy
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtGui import QLabel, QTableWidget, QTableWidgetItem, QPushButton, QVBoxLayout, QCheckBox, QWidget, QToolBar, QLineEdit
+from python_qt_binding.QtGui import QLabel, QTableWidget, QTableWidgetItem, QVBoxLayout, QCheckBox, QWidget, QToolBar, QLineEdit
 from python_qt_binding.QtCore import Qt, QTimer
 
 from rostop.node_info import NodeInfo
@@ -22,7 +22,6 @@ class RosTop(Plugin):
 
     node_fields   = [             'pid', 'get_cpu_percent', 'get_memory_percent', 'get_num_threads']
     out_fields    = ['node_name', 'pid', 'cpu_percent',     'memory_percent',     'num_threads'    ]
-    format_fields = [             '%s',  '%0.2f%%',         '%0.2f%%',            '%s'             ]
     node_labels   = ['Node',      'PID', 'CPU %',           'Mem %',              'Num Threads'    ]
 
     _node_info = NodeInfo()
@@ -57,14 +56,14 @@ class RosTop(Plugin):
         self._toolbar.addWidget(self._regex_box)
 
         self._filter_box.returnPressed.connect(self.update_filter)
+        self._regex_box.stateChanged.connect(self.update_filter)
 
-        # self.button.clicked.connect(lambda : self.update_table())
-
+        # Create a container widget and give it a layout
         self._container = QWidget()
         self._layout    = QVBoxLayout()
         self._container.setLayout(self._layout)
 
-        # Create QWidget
+        # Create the table widget
         self._table_widget = QTableWidget()
         self._table_widget.setObjectName('TopTable')
         self._table_widget.setColumnCount(len(self.node_labels))
@@ -73,19 +72,21 @@ class RosTop(Plugin):
 
 
         self._layout.addWidget(self._table_widget)
-        # context.add_widget(self._layout)
         context.add_widget(self._container)
 
-        # self._table_widget.horizontalHeader().sortIndicatorChanged.connect(self._sortIndicatorChanged)
+        # Update twice since the first cpu% lookup will always return 0
+        self.update_table()
+        self.update_table()
 
-        self.update_table()
-        self.update_table()
+        self._table_widget.resizeColumnToContents(0)
+
+        # Start a timer to trigger updates
         self._update_timer = QTimer()
         self._update_timer.setInterval(1000)
         self._update_timer.timeout.connect(self.update_table)
         self._update_timer.start()
 
-    def update_filter(self):
+    def update_filter(self, *args):
         if self._regex_box.checkState():
             expr = self._filter_box.text()
         else:
@@ -93,19 +94,10 @@ class RosTop(Plugin):
         self.name_filter = re.compile(expr)
         self.update_table()
 
-    def _sortIndicatorChanged(self, logicalIndex, order):
-        print logicalIndex, order
-        print self._table_widget.horizontalHeader().sortIndicatorSection(),
-        print self._table_widget.horizontalHeader().sortIndicatorOrder()
-        print '===='
-
     def _filter_node(self, node_name):
         pass        
 
     def update_one_item(self, nx, info):
-        # twi = QTableWidgetItem(info['node_name'])
-        # twi.setFlags(twi.flags() ^ Qt.ItemIsEditable)
-        # self._table_widget.setItem(nx, 0, twi)
         for fx, field in enumerate(self.out_fields):
             self._table_widget.removeCellWidget(nx, fx)
             val = info[field]
