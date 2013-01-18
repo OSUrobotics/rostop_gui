@@ -41,9 +41,9 @@ class RosTop(Plugin):
                       dest="quiet",
                       help="Put plugin in silent mode")
         args, unknowns = parser.parse_known_args(context.argv())
-        if not args.quiet:
-            print 'arguments: ', args
-            print 'unknowns: ', unknowns
+        # if not args.quiet:
+        #     print 'arguments: ', args
+        #     print 'unknowns: ', unknowns
 
         # Setup the toolbar
         self._toolbar = QToolBar()
@@ -87,7 +87,7 @@ class RosTop(Plugin):
         self._update_timer.start()
 
     def update_filter(self, *args):
-        if self._regex_box.checkState():
+        if self._regex_box.isChecked():
             expr = self._filter_box.text()
         else:
             expr = re.escape(self._filter_box.text())
@@ -97,15 +97,15 @@ class RosTop(Plugin):
     def _filter_node(self, node_name):
         pass        
 
-    def update_one_item(self, nx, info):
-        for fx, field in enumerate(self.out_fields):
-            self._table_widget.removeCellWidget(nx, fx)
+    def update_one_item(self, row, info):
+        for col, field in enumerate(self.out_fields):
+            self._table_widget.removeCellWidget(row, col)
             val = info[field]
             twi = QTableWidgetItem()
             twi.setData(Qt.EditRole, val)
             twi.setFlags(twi.flags() ^ Qt.ItemIsEditable)
-            self._table_widget.setItem(nx, fx, twi)
-            self._table_widget.setRowHidden(nx, len(self.name_filter.findall(info['node_name'])) == 0)
+            self._table_widget.setItem(row, col, twi)
+            self._table_widget.setRowHidden(row, len(self.name_filter.findall(info['node_name'])) == 0)
 
     def update_table(self):
         # self._table_widget.clearContents()
@@ -126,15 +126,16 @@ class RosTop(Plugin):
     def shutdown_plugin(self):
         self._update_timer.stop()
 
-    def save_settings(self, plugin_settings, instance_settings):
-        # TODO save intrinsic configuration, usually using:
-        # instance_settings.set_value(k, v)
-        pass
+    def save_settings(self, plugin_settings, instance_settings):        
+        instance_settings.set_value('header', self._table_widget.horizontalHeader().saveState())
+        instance_settings.set_value('filter_text', self._filter_box.text())
+        instance_settings.set_value('is_regex', int(self._regex_box.checkState()))
 
     def restore_settings(self, plugin_settings, instance_settings):
-        # TODO restore intrinsic configuration, usually using:
-        # v = instance_settings.value(k)
-        pass
+        self._table_widget.horizontalHeader().restoreState(instance_settings.value('header'))
+        self._filter_box.setText(instance_settings.value('filter_text'))
+        self._regex_box.setCheckState(Qt.CheckState(instance_settings.value('is_regex')))
+        self.update_filter()
 
     #def trigger_configuration(self):
         # Comment in to signal that the plugin has a way to configure it
