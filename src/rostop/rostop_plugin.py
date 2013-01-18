@@ -14,6 +14,8 @@ from python_qt_binding.QtCore import Qt, QTimer
 
 from rostop.node_info import NodeInfo
 from functools import partial
+import re
+
 from pprint import pprint
 
 class RosTop(Plugin):
@@ -24,6 +26,8 @@ class RosTop(Plugin):
     node_labels   = ['Node',      'PID', 'CPU %',           'Mem %',              'Num Threads'    ]
 
     _node_info = NodeInfo()
+
+    name_filter = re.compile('')
 
     def __init__(self, context):
         super(RosTop, self).__init__(context)
@@ -44,7 +48,7 @@ class RosTop(Plugin):
 
         # Setup the toolbar
         self._toolbar = QToolBar()
-        # context.add_toolbar(self._toolbar)
+        context.add_toolbar(self._toolbar)
         self._filter_box = QLineEdit()
         self._regex_box  = QCheckBox()
         self._regex_box.setText('regex')
@@ -52,6 +56,7 @@ class RosTop(Plugin):
         self._toolbar.addWidget(self._filter_box)
         self._toolbar.addWidget(self._regex_box)
 
+        self._filter_box.returnPressed.connect(self.update_filter)
 
         # self.button.clicked.connect(lambda : self.update_table())
 
@@ -80,6 +85,14 @@ class RosTop(Plugin):
         self._update_timer.timeout.connect(self.update_table)
         self._update_timer.start()
 
+    def update_filter(self):
+        if self._regex_box.checkState():
+            expr = self._filter_box.text()
+        else:
+            expr = re.escape(self._filter_box.text())
+        self.name_filter = re.compile(expr)
+        self.update_table()
+
     def _sortIndicatorChanged(self, logicalIndex, order):
         print logicalIndex, order
         print self._table_widget.horizontalHeader().sortIndicatorSection(),
@@ -100,6 +113,7 @@ class RosTop(Plugin):
             twi.setData(Qt.EditRole, val)
             twi.setFlags(twi.flags() ^ Qt.ItemIsEditable)
             self._table_widget.setItem(nx, fx, twi)
+            self._table_widget.setRowHidden(nx, len(self.name_filter.findall(info['node_name'])) == 0)
 
     def update_table(self):
         # self._table_widget.clearContents()
