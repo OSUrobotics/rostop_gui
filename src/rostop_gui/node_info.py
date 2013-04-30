@@ -25,7 +25,7 @@
 
 # Author Dan Lazewatsky/lazewatd@engr.orst.edu
 
-import roslib; roslib.load_manifest('rostop')
+import roslib; roslib.load_manifest('rostop_gui')
 import rosnode
 import rospy
 import xmlrpclib

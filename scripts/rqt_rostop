@@ -30,7 +30,7 @@ import sys
 
 import roslib
 
-pkg = 'rostop'
+pkg = 'rostop_gui'
 roslib.load_manifest(pkg)
 
 from rqt_gui.main import Main

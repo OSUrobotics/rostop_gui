@@ -26,7 +26,7 @@
 
 # Author Dan Lazewatsky/lazewatd@engr.orst.edu
 
-import roslib; roslib.load_manifest('rostop')
+import roslib; roslib.load_manifest('rostop_gui')
 
 
 import os
@@ -37,7 +37,7 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtGui import QLabel, QTableWidget, QTableWidgetItem, QVBoxLayout, QCheckBox, QWidget, QToolBar, QLineEdit
 from python_qt_binding.QtCore import Qt, QTimer
 
-from rostop.node_info import NodeInfo
+from rostop_gui.node_info import NodeInfo
 from functools import partial
 import re
 
