@@ -1,16 +1,17 @@
 <package>
-  <description brief="rostop">
+  <description brief="rostop_gui">
 
-     rostop
+     RQT plugin for monitoring ROS processes. 
 
   </description>
   <author>Dan Lazewatsky</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/rostop</url>
+  <url>http://ros.org/wiki/rostop_gui</url>
   <depend package="rospy"/>
   <depend package="rqt_gui"/>
   <depend package="rqt_gui_py"/>
+  <rosdep name="python-psutil"/>
   <export>
     <rqt_gui plugin="${prefix}/plugin.xml"/>
   </export>
