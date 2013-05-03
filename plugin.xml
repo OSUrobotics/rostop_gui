@@ -4,17 +4,9 @@
       Provides information similar to that provided in UNIX top for running ROS nodes.
     </description>
     <qtgui>
-      <!-- optional grouping...
-      <group>
-        <label>Group</label>
-      </group>
-      <group>
-        <label>Subgroup</label>
-      </group>
-      -->
-      <label>ROSTOP</label>
-      <icon type="theme">system-help</icon>
-      <statustip></statustip>
+      <label>Process Monitor</label>
+      <icon type="theme">utilities-system-monitor</icon> 
+      <statustip>Python GUI to view process information about running ROS processes.</statustip>
     </qtgui>
   </class>
 </library>
