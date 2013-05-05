@@ -45,7 +45,6 @@ class NodeInfo(object):
 				p = psutil.Process(pid)
 				self.nodes[node_name] = p
 				return p
-				# print '%s\t%0.2f%%' % (node_name, process.get_cpu_percent())
 			except:
 				return False
 

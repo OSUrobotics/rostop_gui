@@ -34,19 +34,19 @@ import rospy
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtGui import QLabel, QTableWidget, QTableWidgetItem, QVBoxLayout, QCheckBox, QWidget, QToolBar, QLineEdit
+from python_qt_binding.QtGui import QLabel, QTableWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QCheckBox, QWidget, QToolBar, QLineEdit
 from python_qt_binding.QtCore import Qt, QTimer
 
 from rostop_gui.node_info import NodeInfo
 from functools import partial
 import re
-
-from pprint import pprint
+from threading import RLock
 
 class RosTop(Plugin):
 
     node_fields   = [             'pid', 'get_cpu_percent', 'get_memory_percent', 'get_num_threads']
     out_fields    = ['node_name', 'pid', 'cpu_percent',     'memory_percent',     'num_threads'    ]
+    format_strs   = ['%s',        '%s',  '%0.2f',           '%0.2f',              '%s'             ]
     node_labels   = ['Node',      'PID', 'CPU %',           'Mem %',              'Num Threads'    ]
 
     _node_info = NodeInfo()
@@ -70,6 +70,9 @@ class RosTop(Plugin):
         #     print 'arguments: ', args
         #     print 'unknowns: ', unknowns
 
+        self._selected_node = ''
+        self._selected_node_lock = RLock()
+
         # Setup the toolbar
         self._toolbar = QToolBar()
         context.add_toolbar(self._toolbar)
@@ -89,11 +92,13 @@ class RosTop(Plugin):
         self._container.setLayout(self._layout)
 
         # Create the table widget
-        self._table_widget = QTableWidget()
+        self._table_widget = QTreeWidget()
         self._table_widget.setObjectName('TopTable')
         self._table_widget.setColumnCount(len(self.node_labels))
-        self._table_widget.setHorizontalHeaderLabels(self.node_labels)
+        self._table_widget.setHeaderLabels(self.node_labels)
+        self._table_widget.itemClicked.connect(self._tableItemClicked)
         self._table_widget.setSortingEnabled(True)
+        self._table_widget.setAlternatingRowColors(True)
 
 
         self._layout.addWidget(self._table_widget)
@@ -111,6 +116,10 @@ class RosTop(Plugin):
         self._update_timer.timeout.connect(self.update_table)
         self._update_timer.start()
 
+    def _tableItemClicked(self, item, column):
+        with self._selected_node_lock:
+            self._selected_node = item.text(0)
+
     def update_filter(self, *args):
         if self._regex_box.isChecked():
             expr = self._filter_box.text()
@@ -123,41 +132,28 @@ class RosTop(Plugin):
         pass        
 
     def update_one_item(self, row, info):
+        twi = QTreeWidgetItem()
         for col, field in enumerate(self.out_fields):
-            self._table_widget.removeCellWidget(row, col)
             val = info[field]
-            twi = QTableWidgetItem()
-            twi.setData(Qt.EditRole, val)
-            twi.setFlags(twi.flags() ^ Qt.ItemIsEditable)
-            self._table_widget.setItem(row, col, twi)
-            self._table_widget.setRowHidden(row, len(self.name_filter.findall(info['node_name'])) == 0)
+            twi.setText(col, self.format_strs[col] % val)
+        self._table_widget.insertTopLevelItem(row, twi)
+        with self._selected_node_lock:
+            if twi.text(0) == self._selected_node:
+                twi.setSelected(True)
+
+        self._table_widget.setItemHidden(twi, len(self.name_filter.findall(info['node_name'])) == 0)
 
     def update_table(self):
-        # self._table_widget.clearContents()
+        self._table_widget.clear()
         infos = self._node_info.get_all_node_fields(self.node_fields)
-        self._table_widget.setRowCount(len(infos))
-        # asc = 0, desc = 1
-        sort_section = self._table_widget.horizontalHeader().sortIndicatorSection()
-        sort_order = self._table_widget.horizontalHeader().sortIndicatorOrder()
-
-        if sort_section >= len(self.out_fields):
-            sort_section = 0
-
-        for nx, info in enumerate(sorted(infos, key=lambda x: x[self.out_fields[sort_section]], reverse=sort_order)):
+        for nx, info in enumerate(infos):
             self.update_one_item(nx, info)
 
-            # QTimer.singleShot(0, updateme)        
-
-    def shutdown_plugin(self):
-        self._update_timer.stop()
-
     def save_settings(self, plugin_settings, instance_settings):        
-        instance_settings.set_value('header', self._table_widget.horizontalHeader().saveState())
         instance_settings.set_value('filter_text', self._filter_box.text())
         instance_settings.set_value('is_regex', int(self._regex_box.checkState()))
 
     def restore_settings(self, plugin_settings, instance_settings):
-        self._table_widget.horizontalHeader().restoreState(instance_settings.value('header'))
         self._filter_box.setText(instance_settings.value('filter_text'))
         self._regex_box.setCheckState(Qt.CheckState(instance_settings.value('is_regex')))
         self.update_filter()
