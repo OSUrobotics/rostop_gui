@@ -29,16 +29,12 @@
 from __future__ import division
 import roslib; roslib.load_manifest('rostop_gui')
 
-import os
-import rospy
-
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtGui import QLabel, QTableWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QCheckBox, QWidget, QToolBar, QLineEdit
+from python_qt_binding.QtGui import QLabel, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QCheckBox, QWidget, QToolBar, QLineEdit
 from python_qt_binding.QtCore import Qt, QTimer
 
 from rostop_gui.node_info import NodeInfo
-from functools import partial
 import re
 from threading import RLock
 import textwrap
