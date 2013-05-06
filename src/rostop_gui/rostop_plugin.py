@@ -26,8 +26,8 @@
 
 # Author Dan Lazewatsky/lazewatd@engr.orst.edu
 
+from __future__ import division
 import roslib; roslib.load_manifest('rostop_gui')
-
 
 import os
 import rospy
@@ -41,6 +41,7 @@ from rostop_gui.node_info import NodeInfo
 from functools import partial
 import re
 from threading import RLock
+import textwrap
 
 class RosTop(Plugin):
 
@@ -48,6 +49,10 @@ class RosTop(Plugin):
     out_fields    = ['node_name', 'pid', 'cpu_percent',     'memory_percent',     'num_threads'    ]
     format_strs   = ['%s',        '%s',  '%0.2f',           '%0.2f',              '%s'             ]
     node_labels   = ['Node',      'PID', 'CPU %',           'Mem %',              'Num Threads'    ]
+    tooltips      = {
+        0: ('cmdline', lambda x: '\n'.join(textwrap.wrap(' '.join(x)))),
+        3: ('memory_info', lambda x: ('Resident: %0.2f MiB, Virtual: %0.2f MiB' % (x[0]/2**20, x[1]/2**20)))
+    }
 
     _node_info = NodeInfo()
 
@@ -137,6 +142,10 @@ class RosTop(Plugin):
             val = info[field]
             twi.setText(col, self.format_strs[col] % val)
         self._table_widget.insertTopLevelItem(row, twi)
+
+        for col, (key, func) in self.tooltips.iteritems():
+            twi.setToolTip(col, func(info[key]))
+
         with self._selected_node_lock:
             if twi.text(0) == self._selected_node:
                 twi.setSelected(True)

@@ -57,9 +57,10 @@ class NodeInfo(object):
 		return infos
 
 	def get_all_node_fields(self, fields):
+		# import pdb; pdb.set_trace()
 		processes = self.get_all_node_info()
 		infos = []
 		for name, p in processes:
-			infos.append(p.as_dict(fields))
+			infos.append(p.as_dict(fields + ['cmdline', 'get_memory_info']))
 			infos[-1]['node_name'] = name
 		return infos
