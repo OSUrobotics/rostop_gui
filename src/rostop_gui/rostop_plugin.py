@@ -31,7 +31,7 @@ import roslib; roslib.load_manifest('rostop_gui')
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtGui import QLabel, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QCheckBox, QWidget, QToolBar, QLineEdit
+from python_qt_binding.QtGui import QLabel, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QCheckBox, QWidget, QToolBar, QLineEdit, QPushButton
 from python_qt_binding.QtCore import Qt, QTimer
 
 from rostop_gui.node_info import NodeInfo
@@ -76,7 +76,6 @@ class RosTop(Plugin):
 
         # Setup the toolbar
         self._toolbar = QToolBar()
-        context.add_toolbar(self._toolbar)
         self._filter_box = QLineEdit()
         self._regex_box  = QCheckBox()
         self._regex_box.setText('regex')
@@ -92,6 +91,8 @@ class RosTop(Plugin):
         self._layout    = QVBoxLayout()
         self._container.setLayout(self._layout)
 
+        self._layout.addWidget(self._toolbar)
+
         # Create the table widget
         self._table_widget = QTreeWidget()
         self._table_widget.setObjectName('TopTable')
@@ -101,9 +102,13 @@ class RosTop(Plugin):
         self._table_widget.setSortingEnabled(True)
         self._table_widget.setAlternatingRowColors(True)
 
-
         self._layout.addWidget(self._table_widget)
         context.add_widget(self._container)
+
+        # Add a button for killing nodes
+        self._kill_button = QPushButton('Kill Node')
+        self._layout.addWidget(self._kill_button)
+        self._kill_button.clicked.connect(self._kill_node)
 
         # Update twice since the first cpu% lookup will always return 0
         self.update_table()
@@ -129,8 +134,8 @@ class RosTop(Plugin):
         self.name_filter = re.compile(expr)
         self.update_table()
 
-    def _filter_node(self, node_name):
-        pass        
+    def _kill_node(self):
+        self._node_info.kill_node(self._selected_node)
 
     def update_one_item(self, row, info):
         twi = QTreeWidgetItem()

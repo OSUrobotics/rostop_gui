@@ -64,3 +64,7 @@ class NodeInfo(object):
             infos.append(p.as_dict(fields + ['cmdline', 'get_memory_info']))
             infos[-1]['node_name'] = name
         return infos
+
+    def kill_node(self, node_name):
+        success, fail = rosnode.kill_nodes([node_name])
+        return node_name in success
