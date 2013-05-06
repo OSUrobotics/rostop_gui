@@ -154,6 +154,9 @@ class RosTop(Plugin):
         for nx, info in enumerate(infos):
             self.update_one_item(nx, info)
 
+    def shutdown_plugin(self):
+        self._update_timer.stop()
+
     def save_settings(self, plugin_settings, instance_settings):        
         instance_settings.set_value('filter_text', self._filter_box.text())
         instance_settings.set_value('is_regex', int(self._regex_box.checkState()))
